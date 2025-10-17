@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Photo Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'gray-850': '#1f2937',
+              'gray-950': '#0d1117',
+            },
+            maxHeight: {
+              '0': '0',
+              'full': '100%',
+              'screen': '100vh',
+              'xs': '20rem',
+              'sm': '24rem',
+              'md': '28rem',
+              'lg': '32rem',
+              'xl': '36rem',
+              '2xl': '42rem',
+              '3xl': '48rem',
+              '4xl': '56rem',
+              '5xl': '64rem',
+              '6xl': '72rem',
+              '1/2': '50vh',
+              '3/4': '75vh',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      .checkerboard {
+        background-color: #374151; /* gray-700 */
+        background-image:
+          linear-gradient(45deg, #4b5563 25%, transparent 25%),
+          linear-gradient(-45deg, #4b5563 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #4b5563 75%),
+          linear-gradient(-45deg, transparent 75%, #4b5563 75%);
+        background-size: 20px 20px;
+        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.25.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-800 text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
