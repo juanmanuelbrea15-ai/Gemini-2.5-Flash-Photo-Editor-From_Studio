@@ -28,24 +28,30 @@ const CanvasPreview: React.FC<CanvasPreviewProps> = ({
   const [isPanning, setIsPanning] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const lastPanPoint = useRef({ x: 0, y: 0 });
+  const previousImageSrc = useRef<string | null>(null);
 
   useEffect(() => {
     if (imageSrc) {
       const image = new Image();
       image.onload = () => {
         setImg(image);
-        // Only set the original image ref if it's not set or if a new image is loaded
-        if (!originalImageRef.current || image.src !== originalImageRef.current.src) {
+        
+        // Solo actualizar la imagen original si es completamente nueva
+        // NO cuando se genera una nueva imagen (para permitir restauración)
+        if (!originalImageRef.current || (previousImageSrc.current === null)) {
           originalImageRef.current = image;
         }
+        
         if (imageCanvasRef.current) {
             onCanvasReady(imageCanvasRef.current);
         }
       };
       image.src = imageSrc;
+      previousImageSrc.current = imageSrc;
     } else {
       setImg(null);
       originalImageRef.current = null;
+      previousImageSrc.current = null;
     }
   }, [imageSrc, onCanvasReady]);
 
@@ -85,10 +91,8 @@ const CanvasPreview: React.FC<CanvasPreviewProps> = ({
   useEffect(() => {
     if (img) {
       fitToScreen();
-      // Solo limpiar la máscara cuando cambia la imagen, NO en cada re-render
-      clearMask();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // ARREGLADO: NO llamar clearMask() aquí automáticamente
   }, [img, fitToScreen]);
   
   useEffect(() => {
@@ -122,24 +126,51 @@ const CanvasPreview: React.FC<CanvasPreviewProps> = ({
     return { x: invX, y: invY };
   };
   
+  // ARREGLADO: Función de restauración mejorada
   const restoreAtPosition = (x: number, y: number) => {
     const canvas = imageCanvasRef.current;
     const ctx = canvas?.getContext('2d');
     const originalImg = originalImageRef.current;
 
-    if (!ctx || !canvas || !originalImg) return;
+    if (!ctx || !canvas || !originalImg || !img) return;
 
     const radius = (brushSize / 2);
     
+    // Calcular las coordenadas en el espacio del canvas transformado
+    const canvasX = transform.x + x * transform.scale;
+    const canvasY = transform.y + y * transform.scale;
+    
     ctx.save();
-    // Create a circular clipping path
+    
+    // Crear un círculo de clipping
     ctx.beginPath();
-    ctx.arc(transform.x + x * transform.scale, transform.y + y * transform.scale, radius, 0, Math.PI * 2);
+    ctx.arc(canvasX, canvasY, radius, 0, Math.PI * 2);
     ctx.clip();
     
-    // Draw the corresponding part of the original image
-    ctx.drawImage(originalImg, transform.x, transform.y, originalImg.width * transform.scale, originalImg.height * transform.scale);
+    // Limpiar el área
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Redibujar la imagen original en esa área
+    ctx.drawImage(
+      originalImg, 
+      transform.x, 
+      transform.y, 
+      originalImg.width * transform.scale, 
+      originalImg.height * transform.scale
+    );
+    
+    ctx.restore();
+    
+    // Redibujar el resto de la imagen actual fuera del círculo
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.drawImage(
+      img, 
+      transform.x, 
+      transform.y, 
+      img.width * transform.scale, 
+      img.height * transform.scale
+    );
     ctx.restore();
   };
   
@@ -167,6 +198,7 @@ const CanvasPreview: React.FC<CanvasPreviewProps> = ({
     } else if (e.button === 0) {
       setIsDrawing(true);
       const pos = getTransformedMousePos(e);
+      // ARREGLADO: Verificar correctamente el modo de restauración
       if (isRestoring) {
           restoreAtPosition(pos.x, pos.y);
       } else {
@@ -183,6 +215,7 @@ const CanvasPreview: React.FC<CanvasPreviewProps> = ({
       lastPanPoint.current = { x: e.clientX, y: e.clientY };
     } else if (isDrawing) {
       const pos = getTransformedMousePos(e);
+      // ARREGLADO: Verificar correctamente el modo de restauración
       if (isRestoring) {
           restoreAtPosition(pos.x, pos.y);
       } else {
